@@ -13,6 +13,9 @@ export type AccountModel = mongoose.Model<AccountDocument>;
 export class Account {
 
     @Prop({ required: true })
+    role!: string;
+
+    @Prop({ required: true })
     first_name: String;
 
     @Prop({ required: true })
@@ -29,6 +32,13 @@ export class Account {
 
     @Prop({ required: true })
     value_share: String;
+
+    @Prop({
+        type: { hash: String, salt: String },
+        required: true,
+        select: false,
+    })
+    password: { hash: string; salt: string };
 
 }
 

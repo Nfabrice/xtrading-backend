@@ -1,34 +1,62 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { SignuDto } from './dto/signup.dto';
-import { LoginDto } from './dto/login.dto';
-
+import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { LoginDto } from './DTOs/login-dto';
+import { LoginService } from './auth-services/login.service';
+import { VerifyService } from './auth-services/verify.service';
+import { AuthBasicService } from './auth-services/auth-basic.service';
+import { SignupService } from './auth-services/signup.service';
+import { SignupDto } from './DTOs/signup-dto';
+import { AccountDocument } from '@/shared';
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  /**
+   *
+   * @param loginService
+   */
+  constructor(
+    private loginService: LoginService,
+    private signupService: SignupService,
+    private authBasicService: AuthBasicService,
+    private verifyService: VerifyService) { }
 
-  @Post()
-  log(@Body() createAuthDto: SignuDto) {
-    return this.authService.create(createAuthDto);
+  /**
+   * Login process handler
+   * @param loginDto
+   */
+  @Post('login')
+  async login(@Body() loginDto: LoginDto): Promise<{ token: string }> {
+    return this.loginService.verifyAssign(loginDto.email, loginDto.password);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  /**
+   * signup process handler
+   * @param signupDto
+   */
+  @Post('signup')
+  async signup(@Body() signupDto: SignupDto): Promise<any> {
+    return this.signupService.createAccount(signupDto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+
+  /**
+   * 1. verifies the token and 
+   * 2. returns the data with associated account
+   */
+  @Get('verify')
+  async verify(@Headers('Authorization') token: string): Promise<{ account: AccountDocument }> {
+    return {
+      account: await this.verifyService.verify(token)
+    };
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: LoginDto) {
-    return this.authService.update(+id, updateAuthDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  /**
+   * logout  handler
+   * @param res
+   * @param loginDto
+   */
+  @Get('logout')
+  async logout(
+    @Headers('Authorization') token: string,
+  ): Promise<any> {
+    return this.authBasicService.logout()
   }
 }
